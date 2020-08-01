@@ -65,24 +65,33 @@ int main(int argc, char* argv[]) {
 int get_my_mac(char *device, char *mac)
 {
     // ------------------------------- googling..
+
+    // ioctl 세번째 인자로 사용하는 구조체
+    // 인터페이스 이름을 제외한 멤버 변수들은 union으로 구성 (메모리 공간 공유)
     struct ifreq ifr;
     unsigned char *mac_addr = NULL;
 
     memset(&ifr, 0x00, sizeof(ifr));
     strcpy(ifr.ifr_name, device);
 
+    // Datagram socket
     int sock = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (sock < 0) {
         fprintf(stderr, "socket error\n");
         return -1;
     }
 
+    // input output control
+    // ipv4 (AF_INET)
+    // SIOCGIFHWADDR - 0x8927 - Get Hardward Address
     if (ioctl(sock, SIOCGIFHWADDR, &ifr) < 0) {
         fprintf(stderr, "ioctl error\n");
         return -1;
     }
 
+    // allocate HW address pointer
     mac_addr = (unsigned char *) ifr.ifr_hwaddr.sa_data;
+
     // ------------------------------- end of googling code
 
     // write my mac address to buffer
@@ -95,24 +104,35 @@ int get_my_mac(char *device, char *mac)
 
 int get_my_ip(char *device, char *my_ip){
     // ------------------------------- googling..
+
+    // ioctl 세번째 인자로 사용하는 구조체
+    // 인터페이스 이름을 제외한 멤버 변수들은 union으로 구성 (메모리 공간 공유)
     struct ifreq ifr;
 
     memset(&ifr, 0x00, sizeof(ifr));
     strcpy(ifr.ifr_name, device);
 
+    // input output control
+    // ipv4 (AF_INET)
+    // Datagram socket
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
         fprintf(stderr, "socket error\n");
         return -1;
     }
 
+    // SIOCGIFADDR - 0x8915 - Get PA Address
     if (ioctl(sock, SIOCGIFADDR, &ifr) < 0) {
         fprintf(stderr, "ioctl error\n");
         return -1;
     }
 
+    // input output control
+    // AF_INET -> sockaddr_in
+    // Get My IP (string format)
     struct sockaddr_in *sin;
     sin = (struct sockaddr_in*)&ifr.ifr_addr;
+    // sin_addr : Host IP addrses
     strcpy(my_ip, inet_ntoa(sin->sin_addr));
 
     close(sock);
